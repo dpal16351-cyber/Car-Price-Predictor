@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Car Price Predictor</title>
+<style>
+  body{font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;margin:0;display:flex;justify-content:center;padding:32px 16px}
+  .card{background:#1e293b;padding:28px;border-radius:14px;width:100%;max-width:440px}
+  h1{margin:0 0 20px;font-size:1.4rem}
+  label{display:block;margin:14px 0 6px;font-size:.85rem;color:#94a3b8}
+  select,input{width:100%;padding:10px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;box-sizing:border-box}
+  button{margin-top:22px;width:100%;padding:12px;border:0;border-radius:8px;background:#38bdf8;color:#0f172a;font-weight:600;font-size:1rem;cursor:pointer}
+  #out{margin-top:20px;font-size:1.5rem;text-align:center;min-height:2rem}
+  a{color:#38bdf8;font-size:.8rem}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🚗 Car Price Predictor</h1>
+  <label>Company</label><select id="company"></select>
+  <label>Model</label><select id="name"></select>
+  <label>Year</label><input id="year" type="number" value="2018">
+  <label>KMs driven</label><input id="kms" type="number" value="40000">
+  <label>Fuel type</label><select id="fuel"></select>
+  <button onclick="predict()">Predict price</button>
+  <div id="out"></div>
+  <p style="text-align:center"><a href="/docs">API docs</a></p>
+</div>
+<script>
+let meta;
+const $ = id => document.getElementById(id);
+const fill = (el, arr) => el.innerHTML = arr.map(v => `<option>${v}</option>`).join("");
+fetch("/options").then(r => r.json()).then(m => {
+  meta = m; fill($("company"), m.companies); fill($("fuel"), m.fuel_types); setModels();
+});
+$("company").addEventListener("change", () => setModels());
+function setModels(){ fill($("name"), meta.models_by_company[$("company").value]); }
+async function predict(){
+  $("out").textContent = "...";
+  const res = await fetch("/predict", {method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({name:$("name").value, company:$("company").value,
+      year:+$("year").value, kms_driven:+$("kms").value, fuel_type:$("fuel").value})});
+  if(!res.ok){ $("out").textContent = "Error"; return; }
+  const d = await res.json();
+  $("out").textContent = "₹ " + d.predicted_price_inr.toLocaleString("en-IN");
+}
+</script>
+</body>
+</html>
